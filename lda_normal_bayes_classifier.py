@@ -34,10 +34,33 @@ class LdaNormalBayesClassifier(OCRClassifier):
         X = ... # Feature vectors by rows
         y = ... # Labels for each row in X 
 
+        for dir in images_dict:
+            if dir == "may" or dir == "min":
+                for dir2 in images_dict[dir]:
+                    for img in images_dict[dir][dir2]:
+                        cv2.adaptiveThreshold(img, img, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 11, 2)
+                        cv2.findContours(img, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+                        cv2.boundingRect(img)
+                        X.append(img)
+                        y.append(self.char2label(dir2))
+            else:
+                for img in images_dict[dir]:
+                    cv2.adaptiveThreshold(img, img, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 11, 2)
+                    cv2.findContours(img, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+                    cv2.boundingRect(img)
+                    X.append(img)
+                    y.append(self.char2label(dir))
+        
         # Perform LDA training
+        self.lda = LinearDiscriminantAnalysis()
+        self.lda.fit(X, y)
 
         # Perform Classifier training
+        self.classifier = cv2.ml.NormalBayesClassifier_create()
+        self.classifier.train(X, cv2.ml.ROW_SAMPLE, y)
 
+        samples = np.array(X)
+        labels = np.array(y)
         return samples, labels
 
     def predict(self, img):

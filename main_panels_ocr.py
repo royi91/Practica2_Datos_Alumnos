@@ -1,5 +1,5 @@
 import argparse
-
+import lda_normal_bayes_classifier
 
 if __name__ == "__main__":
 
@@ -15,9 +15,11 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     # Load training data
-
+    lda = LdaNormalBayesClassifier()
+    lda.train(args.train_path)
     # Create the OCR classifier
 
+    # ocr = OCRClassifier()
     # Load testing data
 
     # Evaluate OCR over road panels
