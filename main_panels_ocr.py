@@ -1,4 +1,7 @@
 import argparse
+import os
+import cv2
+
 import lda_normal_bayes_classifier
 
 if __name__ == "__main__":
@@ -15,16 +18,13 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     # Load training data
-    lda = lda_normal_bayes_classifier.LdaNormalBayesClassifier((25,25))
+    lda = lda_normal_bayes_classifier.LdaNormalBayesClassifier((25, 25))
     lda.train(args.train_path)
     # Create the OCR classifier
 
-    # ocr = OCRClassifier()
     # Load testing data
+    for img in os.listdir(args.test_path):
+        img2 = cv2.imread(args.test_path + "\\" + img)
+        if img2 is not None: lda.predict(img2)
 
     # Evaluate OCR over road panels
-
-
-
-
-

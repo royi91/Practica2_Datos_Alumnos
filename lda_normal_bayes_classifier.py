@@ -8,7 +8,6 @@ import os
 
 import cv2
 import numpy as np
-from cv2 import CV_32FC1
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
 from ocr_classifier import OCRClassifier
 
@@ -59,13 +58,14 @@ class LdaNormalBayesClassifier(OCRClassifier):
                     #     cv2.imshow("img", img2)
                     #     cv2.waitKey(0)
                     #     m=1
-                    X.append(img2)
+                    X.append(img2.reshape(-1,self.ocr_char_size[0]*self.ocr_char_size[1]))
+                    print("Etiqueta: " + self.label2char(self.char2label(dir)))
                     y.append(self.char2label(dir))
         
         # Perform LDA training
         self.lda = LinearDiscriminantAnalysis()
-
-        X = np.reshape(X, (len(X), self.ocr_char_size[0]*self.ocr_char_size[1]))
+        X = np.array(X)
+        X = X.reshape(-1, self.ocr_char_size[0]*self.ocr_char_size[1])
 
         self.lda.fit(X, y)
 
@@ -73,11 +73,11 @@ class LdaNormalBayesClassifier(OCRClassifier):
         # Perform Classifier training
         self.classifier = cv2.ml.NormalBayesClassifier_create()
         print("1")
-        traind = cv2.ml.TrainData_create(np.array(X), cv2.ml.ROW_SAMPLE, np.array(y))
-        self.classifier.train(traind)
-        print("2")
         samples = np.array(X)
         labels = np.array(y)
+        self.classifier.train(samples, cv2.ml.ROW_SAMPLE, labels)
+        print("2")
+
         return samples, labels
 
     def predict(self, img):
@@ -87,10 +87,18 @@ class LdaNormalBayesClassifier(OCRClassifier):
         :img Image to classify
         
         """
-        
-        y = ... # Obtain the estimated label by the LDA + Bayes classifier
 
-        return int(y)
+        y = ...  # Obtain the estimated label by the LDA + Bayes classifier
+        img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+        img = cv2.resize(img, self.ocr_char_size)
+        img= cv2.adaptiveThreshold(img, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 11, 2)
+        img = img. astype(np.float32)
+        img = img.reshape(1, -1) # Reshape a un solo ejemplo
+
+        _, result = self.classifier.predict(img)
+        label = result[0, 0]
+        char = self.label2char(label)
+        return char
 
 
 
