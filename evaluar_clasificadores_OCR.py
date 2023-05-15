@@ -4,12 +4,18 @@
 
 
 import argparse
+import os
 
-import panel_det
+#import panel_det
 import matplotlib.pyplot as plt
 import cv2
 import numpy as np
 import sklearn
+from sklearn import metrics
+
+import lda_normal_bayes_classifier
+from ocr_classifier import OCRClassifier
+
 
 def plot_confusion_matrix(cm, title='Confusion matrix', cmap=plt.cm.get_cmap('Blues')):
     '''
@@ -51,19 +57,54 @@ if __name__ == "__main__":
     # 1) Cargar las imágenes de entrenamiento y sus etiquetas. 
     # También habrá que extraer los vectores de características asociados (en la parte básica 
     # umbralizar imágenes, pasar findContours y luego redimensionar)
-    
-    # 2) Cargar datos de validación y sus etiquetas
-    # También habrá que extraer los vectores de características asociados (en la parte básica 
+    yt= []
+    Xt= []
+    ocr = OCRClassifier()
+    ruta= args.train_path
+    for dir in os.listdir(ruta):
+        
+        for img in os.listdir(ruta + "\\" + dir):
+            img2 = cv2.imread(ruta + "\\" + dir + "\\" + img)
+            img2 = cv2.cvtColor(img2, cv2.COLOR_BGR2GRAY)
+            img2 = cv2.adaptiveThreshold(img2, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 11, 2)
+            img3 = cv2.findContours(img2, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+            
+            for contorno in img3:
+                cv2.doundingRect
+                contorno = cv2.resize(contorno[], (25, 25))
+                yt.append(ocr.char2label(dir))
+                Xt.append(contorno)
+                
+    # 2) Cargar datos de validación y sus etiquetas También habrá que extraer los vectores de características asociados (en la parte básica
     # umbralizar imágenes, pasar findContours y luego redimensionar)
     gt_labels = ...
+    yv=[]
+    Xv=[]
+    ruta=args.validation_path
+    for dir in os.listdir(ruta):
 
+        for img in os.listdir(ruta + "\\" + dir):
+            img2 = cv2.imread(ruta + "\\" + dir + "\\" + img2)
+            img2 = cv2.cvtColor(img2, cv2.COLOR_BGR2GRAY)
+            img2 = cv2.adaptiveThreshold(img2, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 11, 2)
+            img3 = cv2.findContours(img2, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
+            for contorno in img3:
+                contorno = cv2.resize(contorno, (25, 25))
+                yv.append(ocr.char2label(dir))
+                Xv.append(contorno)
+    gt_labels = yv
     # 3) Entrenar clasificador
-
+    lda = lda_normal_bayes_classifier.LdaNormalBayesClassifier((25, 25))
+    lda.train(args.train_path)
     # 4) Ejecutar el clasificador sobre los datos de validación
-    predicted_labels = ...
+    predicted_labels = []
+    for img in Xv:
+        predicted_labels.append(lda.predict(img))
+
 
     # 5) Evaluar los resultados
     accuracy = sklearn.metrics.accuracy_score(gt_labels, predicted_labels)
+    sklearn.metrics
     print("Accuracy = ", accuracy)
 

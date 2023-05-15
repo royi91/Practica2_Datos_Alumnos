@@ -38,13 +38,7 @@ class LdaNormalBayesClassifier(OCRClassifier):
         for dir in os.listdir(images_dict):
             if dir == "may" or dir == "min":
                 m = 0
-                #for dir2 in os.listdir(images_dict+"\\" + dir):
-                    #for img in os.listdir(images_dict+"\\" + dir + "\\" + dir2):
-                        #cv2.adaptiveThreshold(img, img, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 11, 2)
-                        #cv2.findContours(img, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-                        #cv2.boundingRect(img)
-                        #X.append(img)
-                        #y.append(self.char2label(dir2))
+
             else:
                 m = 0
                 for img in os.listdir(images_dict+"\\" + dir):
@@ -52,8 +46,8 @@ class LdaNormalBayesClassifier(OCRClassifier):
                     img2 = cv2.cvtColor(img2, cv2.COLOR_BGR2GRAY)
                     img2 = cv2.resize(img2, self.ocr_char_size)
                     img2 = cv2.adaptiveThreshold(img2, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 11, 2)
-                    img2 = img2.astype(np.float32)
                     #img2 = cv2.findContours(img2, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+                    img2 = img2.astype(np.float32)
                     # if m == 0:
                     #     cv2.imshow("img", img2)
                     #     cv2.waitKey(0)
@@ -63,8 +57,8 @@ class LdaNormalBayesClassifier(OCRClassifier):
                     y.append(self.char2label(dir))
         
         # Perform LDA training
-        self.lda = LinearDiscriminantAnalysis()
         X = np.array(X)
+        self.lda = LinearDiscriminantAnalysis()
         X = X.reshape(-1, self.ocr_char_size[0]*self.ocr_char_size[1])
 
         self.lda.fit(X, y)
@@ -75,7 +69,12 @@ class LdaNormalBayesClassifier(OCRClassifier):
         print("1")
         samples = np.array(X)
         labels = np.array(y)
-        self.classifier.train(samples, cv2.ml.ROW_SAMPLE, labels)
+        W = self.lda.scalings_
+        print(W)
+        CR = np.dot(samples, W)
+        print(CR)
+        #print(self.lda.scalings_)
+        self.classifier.train(np.array(X), cv2.ml.ROW_SAMPLE, labels)
         print("2")
 
         return samples, labels
