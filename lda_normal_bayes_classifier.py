@@ -1,14 +1,16 @@
 # @brief LdaNormalBayesClassifier
 # @author Jose M. Buenaposada (josemiguel.buenaposada@urjc.es)
 # @date 2023
+import os
 
 # A continuación se presenta un esquema de la clase necesaria para implementar el clasificador
 # propuesto en el Ejercicio1 de la práctica. Habrá que terminarla
 
 import cv2
 import numpy as np
+from cv2 import CV_32FC1
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
-from .ocr_classifier import OCRClassifier
+from ocr_classifier import OCRClassifier
 
 class LdaNormalBayesClassifier(OCRClassifier):
     """
@@ -31,34 +33,49 @@ class LdaNormalBayesClassifier(OCRClassifier):
 
         # Take training images and do feature extraction
         
-        X = ... # Feature vectors by rows
-        y = ... # Labels for each row in X 
+        X = [] # Feature vectors by rows
+        y = [] # Labels for each row in X
 
-        for dir in images_dict:
+        for dir in os.listdir(images_dict):
             if dir == "may" or dir == "min":
-                for dir2 in images_dict[dir]:
-                    for img in images_dict[dir][dir2]:
-                        cv2.adaptiveThreshold(img, img, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 11, 2)
-                        cv2.findContours(img, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-                        cv2.boundingRect(img)
-                        X.append(img)
-                        y.append(self.char2label(dir2))
+                m = 0
+                #for dir2 in os.listdir(images_dict+"\\" + dir):
+                    #for img in os.listdir(images_dict+"\\" + dir + "\\" + dir2):
+                        #cv2.adaptiveThreshold(img, img, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 11, 2)
+                        #cv2.findContours(img, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+                        #cv2.boundingRect(img)
+                        #X.append(img)
+                        #y.append(self.char2label(dir2))
             else:
-                for img in images_dict[dir]:
-                    cv2.adaptiveThreshold(img, img, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 11, 2)
-                    cv2.findContours(img, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-                    cv2.boundingRect(img)
-                    X.append(img)
+                m = 0
+                for img in os.listdir(images_dict+"\\" + dir):
+                    img2 = cv2.imread(images_dict+"\\"+dir+"\\"+img)
+                    img2 = cv2.cvtColor(img2, cv2.COLOR_BGR2GRAY)
+                    img2 = cv2.resize(img2, self.ocr_char_size)
+                    img2 = cv2.adaptiveThreshold(img2, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 11, 2)
+                    img2 = img2.astype(np.float32)
+                    #img2 = cv2.findContours(img2, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+                    # if m == 0:
+                    #     cv2.imshow("img", img2)
+                    #     cv2.waitKey(0)
+                    #     m=1
+                    X.append(img2)
                     y.append(self.char2label(dir))
         
         # Perform LDA training
         self.lda = LinearDiscriminantAnalysis()
+
+        X = np.reshape(X, (len(X), self.ocr_char_size[0]*self.ocr_char_size[1]))
+
         self.lda.fit(X, y)
+
 
         # Perform Classifier training
         self.classifier = cv2.ml.NormalBayesClassifier_create()
-        self.classifier.train(X, cv2.ml.ROW_SAMPLE, y)
-
+        print("1")
+        traind = cv2.ml.TrainData_create(np.array(X), cv2.ml.ROW_SAMPLE, np.array(y))
+        self.classifier.train(traind)
+        print("2")
         samples = np.array(X)
         labels = np.array(y)
         return samples, labels

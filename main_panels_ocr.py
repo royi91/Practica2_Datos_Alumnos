@@ -15,7 +15,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     # Load training data
-    lda = LdaNormalBayesClassifier()
+    lda = lda_normal_bayes_classifier.LdaNormalBayesClassifier((25,25))
     lda.train(args.train_path)
     # Create the OCR classifier
 
