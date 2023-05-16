@@ -41,6 +41,8 @@ class LdaNormalBayesClassifier(OCRClassifier):
 
             else:
                 m = 0
+
+
                 for img in os.listdir(images_dict+"\\" + dir):
                     img2 = cv2.imread(images_dict+"\\"+dir+"\\"+img)
                     img2 = cv2.cvtColor(img2, cv2.COLOR_BGR2GRAY)
@@ -48,34 +50,27 @@ class LdaNormalBayesClassifier(OCRClassifier):
                     img2 = cv2.adaptiveThreshold(img2, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 11, 2)
                     #img2 = cv2.findContours(img2, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
                     img2 = img2.astype(np.float32)
-                    # if m == 0:
-                    #     cv2.imshow("img", img2)
-                    #     cv2.waitKey(0)
-                    #     m=1
                     X.append(img2.reshape(-1,self.ocr_char_size[0]*self.ocr_char_size[1]))
                     print("Etiqueta: " + self.label2char(self.char2label(dir)))
                     y.append(self.char2label(dir))
         
         # Perform LDA training
         X = np.array(X)
+        num_samples = X.shape[0]
+        num_features = X.shape[1]
+        X = X.reshape(num_samples, -1)
         self.lda = LinearDiscriminantAnalysis()
-        X = X.reshape(-1, self.ocr_char_size[0]*self.ocr_char_size[1])
+        print(X.shape)
+        #X_transformed = self.lda.fit_transform(X, y)
 
         self.lda.fit(X, y)
 
-
         # Perform Classifier training
         self.classifier = cv2.ml.NormalBayesClassifier_create()
-        print("1")
-        samples = np.array(X)
+        X = self.lda.transform(X);
+        samples = np.array(X, dtype=np.float32)
         labels = np.array(y)
-        W = self.lda.scalings_
-        print(W)
-        CR = np.dot(samples, W)
-        print(CR)
-        #print(self.lda.scalings_)
-        self.classifier.train(np.array(X), cv2.ml.ROW_SAMPLE, labels)
-        print("2")
+        self.classifier.train(samples, cv2.ml.ROW_SAMPLE, labels)
 
         return samples, labels
 
@@ -87,17 +82,15 @@ class LdaNormalBayesClassifier(OCRClassifier):
         
         """
 
-        y = ...  # Obtain the estimated label by the LDA + Bayes classifier
-        img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-        img = cv2.resize(img, self.ocr_char_size)
-        img= cv2.adaptiveThreshold(img, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 11, 2)
-        img = img. astype(np.float32)
-        img = img.reshape(1, -1) # Reshape a un solo ejemplo
-
+        img = img.astype(np.float32)
+        img = img.reshape(1, -1)  # Reshape a un solo ejemplo
+        print("Tipo de dato de las muestras:", img.dtype)
+        print("Número de columnas en las muestras:", img.shape[1])
+        print("Valor de nallvars:", self.classifier.getVarCount())
         _, result = self.classifier.predict(img)
         label = result[0, 0]
         char = self.label2char(label)
-        return char
+        return label
 
 
 

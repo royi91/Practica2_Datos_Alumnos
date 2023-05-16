@@ -64,16 +64,18 @@ if __name__ == "__main__":
     for dir in os.listdir(ruta):
         
         for img in os.listdir(ruta + "\\" + dir):
-            img2 = cv2.imread(ruta + "\\" + dir + "\\" + img)
-            img2 = cv2.cvtColor(img2, cv2.COLOR_BGR2GRAY)
-            img2 = cv2.adaptiveThreshold(img2, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 11, 2)
-            img3 = cv2.findContours(img2, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-            
-            for contorno in img3:
-                cv2.doundingRect
-                contorno = cv2.resize(contorno[], (25, 25))
-                yt.append(ocr.char2label(dir))
-                Xt.append(contorno)
+                img2 = cv2.imread(ruta + "\\" + dir + "\\" + img)
+                if img2 is not None:
+                    img2 = cv2.cvtColor(img2, cv2.COLOR_BGR2GRAY)
+                    img2 = cv2.adaptiveThreshold(img2, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 11, 2)
+                    contornos, _  = cv2.findContours(img2, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+
+                    for contorno in contornos:
+                        x, y, w, h = cv2.boundingRect(contorno)
+                        # Recortar la región de interés (ROI) de la imagen
+                        roi = img2[y:y + h, x:x + w]
+                        yt.append(ocr.char2label(dir))
+                        Xt.append(roi)
                 
     # 2) Cargar datos de validación y sus etiquetas También habrá que extraer los vectores de características asociados (en la parte básica
     # umbralizar imágenes, pasar findContours y luego redimensionar)
@@ -84,22 +86,28 @@ if __name__ == "__main__":
     for dir in os.listdir(ruta):
 
         for img in os.listdir(ruta + "\\" + dir):
-            img2 = cv2.imread(ruta + "\\" + dir + "\\" + img2)
-            img2 = cv2.cvtColor(img2, cv2.COLOR_BGR2GRAY)
-            img2 = cv2.adaptiveThreshold(img2, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 11, 2)
-            img3 = cv2.findContours(img2, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+            img2 = cv2.imread(ruta + "\\" + dir + "\\" + img)
+            if img2 is not None:
+                if len(img2.shape) > 2 and img2.shape[2] > 1:
+                    img2 = cv2.cvtColor(img2, cv2.COLOR_BGR2GRAY)
+                img2 = cv2.adaptiveThreshold(img2, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 11, 2)
+                contornos, _ = cv2.findContours(img2, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
-            for contorno in img3:
-                contorno = cv2.resize(contorno, (25, 25))
-                yv.append(ocr.char2label(dir))
-                Xv.append(contorno)
-    gt_labels = yv
+                for contorno in contornos:
+                    x, y, w, h = cv2.boundingRect(contorno)
+                    # Recortar la región de interés (ROI) de la imagen
+                    roi = img2[y:y + h, x:x + w]
+                    yv.append(ocr.char2label(dir))
+                    Xv.append(roi)
+
+    gt_labels = np.array(yv)
     # 3) Entrenar clasificador
     lda = lda_normal_bayes_classifier.LdaNormalBayesClassifier((25, 25))
     lda.train(args.train_path)
     # 4) Ejecutar el clasificador sobre los datos de validación
     predicted_labels = []
     for img in Xv:
+        img = cv2.resize(img, ocr.ocr_char_size)
         predicted_labels.append(lda.predict(img))
 
 
